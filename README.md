@@ -26,7 +26,7 @@ It demonstrates a complete hiring workflow with both frontend and backend deploy
 - View applicants / bids
 - Status updates
 
-### ⚡ Real-time (if applicable)
+### ⚡ Real-time 
 - Socket.IO for live updates (bids / notifications)
 
 ### 🧩 UI
@@ -48,7 +48,7 @@ It demonstrates a complete hiring workflow with both frontend and backend deploy
 - Express.js
 - MongoDB (Mongoose)
 - JWT Authentication
-- Socket.IO (if used)
+- Socket.IO
 
 ### Deployment
 - Frontend: Vercel 
