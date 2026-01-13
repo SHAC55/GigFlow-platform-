@@ -1,10 +1,12 @@
-// Navbar Component (create Navbar.jsx)
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotification } from "../context/NotificationContext";
 import { useState } from "react";
+import { Bell } from "lucide-react";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotification();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -20,8 +22,9 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg"></div>
-              <span className="font-bold text-xl text-gray-900">FreelanceHub</span>
+              <span className="font-bold text-xl text-gray-900">
+                FreelanceHub
+              </span>
             </Link>
           </div>
 
@@ -33,7 +36,7 @@ const Navbar = () => {
             >
               Browse Gigs
             </Link>
-            
+
             {user && (
               <>
                 <Link
@@ -42,12 +45,28 @@ const Navbar = () => {
                 >
                   Post a Gig
                 </Link>
+
+                {/* 🔔 Notification Bell */}
+                <Link to="/notifications" className="relative">
+                  <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600" />
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute -top-2 -right-2 bg-red-500 text-white
+                      text-xs w-5 h-5 flex items-center justify-center rounded-full"
+                    >
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                       {user.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-gray-700 font-medium">{user.name}</span>
+                    <span className="text-gray-700 font-medium">
+                      {user.name}
+                    </span>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -69,7 +88,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium"
+                  className="bg-black text-white px-6 py-2 rounded-lg hover:opacity-90 transition-opacity font-medium"
                 >
                   Sign Up
                 </Link>
@@ -83,11 +102,26 @@ const Navbar = () => {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="text-gray-700 hover:text-gray-900"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -105,8 +139,11 @@ const Navbar = () => {
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                     {user.name?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="font-medium text-gray-900">{user.name}</span>
+                  <span className="font-medium text-gray-900">
+                    {user.name}
+                  </span>
                 </div>
+
                 <Link
                   to="/"
                   className="block py-2 text-gray-700 hover:text-blue-600 transition-colors"
@@ -114,13 +151,29 @@ const Navbar = () => {
                 >
                   Browse Gigs
                 </Link>
+
                 <Link
-                  to="/post-gig"
+                  to="/post"
                   className="block py-2 text-gray-700 hover:text-blue-600 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Post a Gig
                 </Link>
+
+                {/* 🔔 Notifications (Mobile) */}
+                <Link
+                  to="/notifications"
+                  className="block py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  🔔 Notifications
+                  {unreadCount > 0 && (
+                    <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+
                 <button
                   onClick={() => {
                     handleLogout();

@@ -1,6 +1,6 @@
-import bidModel from '../models/bidModel.js'
-import gigModel from '../models/gigModel.js';
-import mongoose from "mongoose";
+import { io } from "../server.js";
+import bidModel from "../models/bidModel.js";
+import gigModel from "../models/gigModel.js";
 
 export const createBid = async (req, res) => {
   try {
@@ -21,8 +21,10 @@ export const createBid = async (req, res) => {
 
 export const getBidsByGig = async (req, res) => {
   try {
-    const bids = await bidModel.find({ gigId: req.params.gigId })
-      .populate("freelancerId", "name email");
+    const bids = await bidModel
+      .find({ gigId: req.params.gigId })
+      .populate("freelancerId", "name email")
+      .populate("gigId", "ownerId status"); // ✅ THIS LINE FIXES EVERYTHING
 
     res.json(bids);
   } catch (err) {
@@ -32,32 +34,55 @@ export const getBidsByGig = async (req, res) => {
 
 export const hireBid = async (req, res) => {
   try {
-    const bid = await bidModel.findById(req.params.bidId);
+    const userId = req.user.id;
+
+    const bid = await bidModel.findById(req.params.bidId).populate("gigId");
+
     if (!bid) return res.status(404).json({ message: "Bid not found" });
 
-    const gig = await gigModel.findOneAndUpdate(
-      { _id: bid.gigId, status: "open" }, 
+    if (bid.gigId.ownerId.toString() !== userId) {
+      return res.status(403).json({ message: "Only gig owner can hire" });
+    }
+
+    if (bid.status === "hired") {
+      return res.status(400).json({ message: "Already hired" });
+    }
+
+    const alreadyHired = await bidModel.findOne({
+      gigId: bid.gigId._id,
+      status: "hired",
+    });
+
+    if (alreadyHired) {
+      return res.status(400).json({ message: "Gig already assigned" });
+    }
+
+    bid.status = "hired";
+    await bid.save();
+
+    await bidModel.updateMany(
+      { gigId: bid.gigId._id, _id: { $ne: bid._id } },
+      { status: "rejected" }
+    );
+
+    // console.log(bid.freelancerId)
+    io.to(bid.freelancerId.toString()).emit("hired", {
+      message: "🎉 You have been hired for a gig!",
+      gigId: bid.gigId._id,
+      gigTitle: bid.gigId.title || "New Gig",
+    });
+
+ 
+
+    const updatedGig = await gigModel.findByIdAndUpdate(
+      bid.gigId._id,
       { status: "assigned" },
       { new: true }
     );
 
-    if (!gig) {
-      return res.status(400).json({ message: "Gig already assigned" });
-    }
-
-    // mark selected bid hired
-    await bidModel.findByIdAndUpdate(bid._id, { status: "hired" });
-
-    // reject others
-    await bidModel.updateMany(
-      { gigId: gig._id, _id: { $ne: bid._id } },
-      { status: "rejected" }
-    );
-
-    res.json({ message: "Freelancer hired successfully" });
-
+    res.json({ success: true, bid });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
-

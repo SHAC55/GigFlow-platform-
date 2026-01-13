@@ -1,14 +1,34 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import socket from "../socket";
 import api from "../api/axios";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true); 
   const [authError, setAuthError] = useState(null);
 
-  // ✅ REGISTER
+  //  Check  login on refresh
+  const checkAuth = async () => {
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data.user);
+
+      // rejoin socket room after refresh
+      socket.emit("join", res.data.user._id);
+    } catch (err) {
+      setUser(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  // Register
   const register = async (data) => {
     try {
       setAuthLoading(true);
@@ -17,7 +37,6 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || "Registration failed";
-      console.error("REGISTER ERROR:", msg);
       setAuthError(msg);
       return { success: false, message: msg };
     } finally {
@@ -25,17 +44,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ LOGIN
+  // Login
   const login = async (data) => {
     try {
       setAuthLoading(true);
       setAuthError(null);
       const res = await api.post("/auth/login", data);
       setUser(res.data.user);
+
+      // 🔥 join socket room
+      socket.emit("join", res.data.user._id);
+
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || "Login failed";
-      console.error("LOGIN ERROR:", msg);
       setAuthError(msg);
       return { success: false, message: msg };
     } finally {
@@ -43,17 +65,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ LOGOUT
+  // Logout
   const logout = async () => {
     try {
       setAuthLoading(true);
       setAuthError(null);
       await api.post("/auth/logout");
       setUser(null);
+      socket.disconnect();
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || "Logout failed";
-      console.error("LOGOUT ERROR:", msg);
       setAuthError(msg);
       return { success: false, message: msg };
     } finally {
@@ -70,6 +92,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        checkAuth
       }}
     >
       {children}
